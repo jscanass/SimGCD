@@ -1,13 +1,16 @@
 # -----------------
 # DATASET ROOTS
 # -----------------
-cifar_10_root = '${DATASET_DIR}/cifar10'
-cifar_100_root = '${DATASET_DIR}/cifar100'
-cub_root = '${DATASET_DIR}/cub'
-aircraft_root = '${DATASET_DIR}/fgvc-aircraft-2013b'
-car_root = '${DATASET_DIR}/cars'
-herbarium_dataroot = '${DATASET_DIR}/herbarium_19'
-imagenet_root = '${DATASET_DIR}/ImageNet'
+
+DATASET_DIR = '/home/jscanas/ch3/SimGCD/datasets'
+
+cifar_10_root = f'{DATASET_DIR}/cifar10'
+cifar_100_root = f'{DATASET_DIR}/cifar100'
+cub_root = f'{DATASET_DIR}/cub'
+aircraft_root = f'{DATASET_DIR}/fgvc-aircraft-2013b'
+car_root = f'{DATASET_DIR}/cars'
+herbarium_dataroot = f'{DATASET_DIR}/herbarium_19'
+imagenet_root = f'{DATASET_DIR}/ImageNet'
 
 # OSR Split dir
 osr_split_dir = 'data/ssb_splits'

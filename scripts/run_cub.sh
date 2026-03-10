@@ -5,15 +5,15 @@ set -x
 
 CUDA_VISIBLE_DEVICES=0 python train.py \
     --dataset_name 'cub' \
-    --batch_size 128 \
+    --batch_size 512 \
     --grad_from_block 11 \
     --epochs 200 \
-    --num_workers 8 \
+    --num_workers 16 \
     --use_ssb_splits \
     --sup_weight 0.35 \
     --weight_decay 5e-5 \
     --transform 'imagenet' \
-    --lr 0.1 \
+    --lr 0.4 \
     --eval_funcs 'v2' \
     --warmup_teacher_temp 0.07 \
     --teacher_temp 0.04 \

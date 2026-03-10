@@ -29,7 +29,11 @@ We hope the investigation and proposed simple framework can serve as a strong ba
 ### Dependencies
 
 ```
-pip install -r requirements.txt
+uv venv
+```
+
+```
+uv pip install -r requirements.txt
 ```
 
 ### Config
