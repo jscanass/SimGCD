@@ -226,7 +226,7 @@ class BatDetect2(Dataset):
 
 
 def subsample_dataset(dataset: BatDetect2, idxs: np.ndarray) -> BatDetect2:
-    idxs = np.asarray(idxs)
+    idxs = np.asarray(idxs, dtype=int)
     dataset.data = [dataset.data[int(i)] for i in idxs.tolist()]
     dataset.uq_idxs = dataset.uq_idxs[idxs]
     return dataset
