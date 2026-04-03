@@ -7,6 +7,9 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from copy import deepcopy
+
+from data.data_utils import subsample_instances
 
 import batdetect2.api as bd2_api
 from batdetect2.detector.parameters import DEFAULT_SPECTROGRAM_PARAMETERS, TARGET_SAMPLERATE_HZ
@@ -220,3 +223,88 @@ class BatDetect2(Dataset):
             target = self.target_transform(target)
 
         return img, target, uq_idx
+
+
+def subsample_dataset(dataset: BatDetect2, idxs: np.ndarray) -> BatDetect2:
+    idxs = np.asarray(idxs)
+    dataset.data = [dataset.data[int(i)] for i in idxs.tolist()]
+    dataset.uq_idxs = dataset.uq_idxs[idxs]
+    return dataset
+
+
+def subsample_classes(dataset: BatDetect2, include_classes=range(2)) -> BatDetect2:
+    include = set(int(c) for c in include_classes)
+    cls_idxs = [i for i, r in enumerate(dataset.data) if int(r.species_id) in include]
+    dataset = subsample_dataset(dataset, np.array(cls_idxs))
+    return dataset
+
+
+def get_train_val_indices(train_dataset: BatDetect2, val_split=0.2):
+    all_targets = np.array([int(r.species_id) for r in train_dataset.data])
+    train_classes = np.unique(all_targets)
+
+    train_idxs = []
+    val_idxs = []
+    for cls in train_classes:
+        cls_idxs = np.where(all_targets == cls)[0]
+        v_ = np.random.choice(cls_idxs, replace=False, size=((int(val_split * len(cls_idxs))),))
+        t_ = [x for x in cls_idxs if x not in v_]
+
+        train_idxs.extend(t_)
+        val_idxs.extend(v_)
+
+    return train_idxs, val_idxs
+
+
+def get_batdetect2_datasets(
+    train_transform,
+    test_transform,
+    train_classes,
+    prop_train_labels=0.8,
+    split_train_val=False,
+    seed=0,
+    *,
+    csv_path: str,
+    audio_root: Optional[str] = None,
+):
+    """
+    Construct BatDetect2 dataset dict in the same format as other SimGCD datasets.
+    """
+    np.random.seed(seed)
+
+    whole_training_set = BatDetect2(
+        csv_path=csv_path,
+        audio_root=audio_root,
+        train=True,
+        transform=train_transform,
+    )
+
+    train_dataset_labelled = subsample_classes(deepcopy(whole_training_set), include_classes=train_classes)
+    subsample_indices = subsample_instances(train_dataset_labelled, prop_indices_to_subsample=prop_train_labels)
+    train_dataset_labelled = subsample_dataset(train_dataset_labelled, subsample_indices)
+
+    # Split into training and validation sets (optional; typically unused in this repo)
+    train_idxs, val_idxs = get_train_val_indices(train_dataset_labelled)
+    train_dataset_labelled_split = subsample_dataset(deepcopy(train_dataset_labelled), train_idxs)
+    val_dataset_labelled_split = subsample_dataset(deepcopy(train_dataset_labelled), val_idxs)
+    val_dataset_labelled_split.transform = test_transform
+
+    unlabelled_indices = set(whole_training_set.uq_idxs) - set(train_dataset_labelled.uq_idxs)
+    train_dataset_unlabelled = subsample_dataset(deepcopy(whole_training_set), np.array(list(unlabelled_indices)))
+
+    test_dataset = BatDetect2(
+        csv_path=csv_path,
+        audio_root=audio_root,
+        train=False,
+        transform=test_transform,
+    )
+
+    train_dataset_labelled = train_dataset_labelled_split if split_train_val else train_dataset_labelled
+    val_dataset_labelled = val_dataset_labelled_split if split_train_val else None
+
+    return {
+        "train_labelled": train_dataset_labelled,
+        "train_unlabelled": train_dataset_unlabelled,
+        "val": val_dataset_labelled,
+        "test": test_dataset,
+    }

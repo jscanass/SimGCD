@@ -6,10 +6,12 @@ from data.stanford_cars import get_scars_datasets
 from data.imagenet import get_imagenet_100_datasets, get_imagenet_1k_datasets
 from data.cub import get_cub_datasets
 from data.fgvc_aircraft import get_aircraft_datasets
+from data.batdetect2 import get_batdetect2_datasets
 
 from copy import deepcopy
 import pickle
 import os
+import csv
 
 from config import osr_split_dir
 
@@ -22,7 +24,8 @@ get_dataset_funcs = {
     'herbarium_19': get_herbarium_datasets,
     'cub': get_cub_datasets,
     'aircraft': get_aircraft_datasets,
-    'scars': get_scars_datasets
+    'scars': get_scars_datasets,
+    'batdetect2': get_batdetect2_datasets
 }
 
 
@@ -41,10 +44,24 @@ def get_datasets(dataset_name, train_transform, test_transform, args):
 
     # Get datasets
     get_dataset_f = get_dataset_funcs[dataset_name]
-    datasets = get_dataset_f(train_transform=train_transform, test_transform=test_transform,
-                            train_classes=args.train_classes,
-                            prop_train_labels=args.prop_train_labels,
-                            split_train_val=False)
+    if dataset_name == "batdetect2":
+        datasets = get_dataset_f(
+            train_transform=train_transform,
+            test_transform=test_transform,
+            train_classes=args.train_classes,
+            prop_train_labels=args.prop_train_labels,
+            split_train_val=False,
+            csv_path=args.batdetect2_csv_path,
+            audio_root=getattr(args, "batdetect2_audio_root", None),
+        )
+    else:
+        datasets = get_dataset_f(
+            train_transform=train_transform,
+            test_transform=test_transform,
+            train_classes=args.train_classes,
+            prop_train_labels=args.prop_train_labels,
+            split_train_val=False,
+        )
     # Set target transforms:
     target_transform_dict = {}
     for i, cls in enumerate(list(args.train_classes) + list(args.unlabeled_classes)):
@@ -168,6 +185,35 @@ def get_class_splits(args):
 
             args.train_classes = range(100)
             args.unlabeled_classes = range(100, 200)
+
+    elif args.dataset_name == "batdetect2":
+
+        args.image_size = 224
+
+        # If user already provided splits, keep them. Otherwise infer from CSV.
+        if getattr(args, "train_classes", None) is None or getattr(args, "unlabeled_classes", None) is None:
+            csv_path = getattr(args, "batdetect2_csv_path", None)
+            if csv_path is None:
+                raise ValueError("For dataset 'batdetect2', expected args.batdetect2_csv_path to be set.")
+
+            species_ids = set()
+            with open(csv_path, "r", newline="") as f:
+                reader = csv.DictReader(f)
+                if reader.fieldnames is None or "species_id" not in set(reader.fieldnames):
+                    raise ValueError(f"CSV missing 'species_id' header: {csv_path}")
+                for r in reader:
+                    try:
+                        species_ids.add(int(r["species_id"]))
+                    except Exception:
+                        continue
+
+            species_ids = sorted(species_ids)
+            if len(species_ids) < 2:
+                raise ValueError(f"Need at least 2 unique species_id values in {csv_path} to create class splits.")
+
+            mid = len(species_ids) // 2
+            args.train_classes = species_ids[:mid]
+            args.unlabeled_classes = species_ids[mid:]
 
     else:
 
