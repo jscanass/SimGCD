@@ -189,6 +189,7 @@ class BatDetect2(Dataset):
             audio_slice,
             samp_rate=self.samplerate_hz,
             config=self.spec_params,
+            device="cpu"
         )
 
         # spec shape: [1, 1, H, W]

@@ -189,6 +189,10 @@ def get_class_splits(args):
     elif args.dataset_name == "batdetect2":
 
         args.image_size = 224
+        if getattr(args, "batdetect2_csv_path", None) is None:
+            args.batdetect2_csv_path = (
+                "/home/jscanas/biocai/ch2/datasets/echolocation/annotations/batdetect2_echospfull.csv"
+            )
 
         # If user already provided splits, keep them. Otherwise infer from CSV.
         if getattr(args, "train_classes", None) is None or getattr(args, "unlabeled_classes", None) is None:

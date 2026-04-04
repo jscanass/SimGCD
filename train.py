@@ -204,6 +204,21 @@ if __name__ == "__main__":
     parser.add_argument('--print_freq', default=10, type=int)
     parser.add_argument('--exp_name', default=None, type=str)
 
+    parser.add_argument(
+        '--batdetect2_csv_path',
+        type=str,
+        default=None,
+        help='Annotations CSV for dataset_name=batdetect2 (species_id, audio_path, split, ...).',
+    )
+    parser.add_argument(
+        '--batdetect2_audio_root',
+        type=str,
+        default=None,
+        help='Directory prepended to relative audio_path in CSV. For echolocation CSVs with paths like '
+             'datasets/<source>/audio/..., this should be the echolocation dataset root '
+             '(parent of the datasets/ folder), not .../audio.',
+    )
+
     # ----------------------
     # INIT
     # ----------------------
